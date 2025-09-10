@@ -12,6 +12,7 @@ import { pipe } from "effect/Function"
 import * as Match from "effect/Match"
 import * as Option from "effect/Option"
 import * as Yaml from "yaml"
+import { spawnSync } from "node:child_process"
 import { ProjectType } from "./Domain.js"
 import { GitHub } from "./GitHub.js"
 import type { Example } from "./internal/examples.js"
@@ -151,6 +152,7 @@ function resolveProjectType(config: RawConfig) {
 function createExample(config: ExampleConfig) {
   return Effect.gen(function*() {
     const fs = yield* FileSystem.FileSystem
+    const path = yield* Path.Path
 
     yield* Effect.logInfo(AnsiDoc.hsep([
       AnsiDoc.text("Creating a new Effect application in: "),
@@ -173,6 +175,14 @@ function createExample(config: ExampleConfig) {
       AnsiDoc.text("Effect example application was initialized in: "),
       AnsiDoc.text(config.projectName).pipe(AnsiDoc.annotate(Ansi.cyan))
     ]))
+
+    // Optionally run a post-create hook if defined by the template/example
+    const pkgPath = path.join(config.projectName, "package.json")
+    const hasPackageJson = yield* fs.exists(pkgPath)
+    if (hasPackageJson) {
+      const pkg = yield* fs.readFileString(pkgPath).pipe(Effect.map(JSON.parse))
+      yield* runDidCreateEffectApp(config.projectName, pkg)
+    }
   })
 }
 
@@ -341,6 +351,9 @@ function createTemplate(config: TemplateConfig) {
         AnsiDoc.indent(2)
       )
     ]))
+
+    // Optionally run a post-create hook if defined by the template
+    yield* runDidCreateEffectApp(config.projectName, packageJson)
   })
 }
 
@@ -416,3 +429,74 @@ const getUserInput = Prompt.select<"example" | "template">({
     }
   }
 }))
+
+// =============================================================================
+// Post-create hook
+// =============================================================================
+
+function detectPackageManager(pkg: any): "pnpm" | "npm" | "yarn" | "bun" {
+  const pm: string | undefined = pkg?.packageManager
+  if (typeof pm === "string") {
+    const name = pm.split("@")[0] ?? ""
+    if (name === "pnpm" || name === "npm" || name === "yarn" || name === "bun") return name as any
+  }
+  return "npm"
+}
+
+function runWithManager(
+  manager: "pnpm" | "npm" | "yarn" | "bun",
+  cwd: string
+): { status: number | null; error?: Error & { code?: string } } {
+  const args =
+    manager === "pnpm"
+      ? ["run", "-s", "did-create-effect-app"]
+      : manager === "npm"
+        ? ["run", "--silent", "did-create-effect-app"]
+        : manager === "yarn"
+          ? ["run", "-s", "did-create-effect-app"]
+          : ["run", "did-create-effect-app"] // bun
+
+  const res = spawnSync(manager, args, {
+    cwd,
+    stdio: "inherit",
+    shell: process.platform === "win32"
+  })
+  // attach error if any
+  return { status: res.status, error: (res as any).error }
+}
+
+function runDidCreateEffectApp(projectDir: string, pkg: any) {
+  return Effect.gen(function*() {
+    const scripts = pkg?.scripts ?? {}
+    if (!("did-create-effect-app" in scripts)) {
+      return
+    }
+
+    const manager = detectPackageManager(pkg)
+    yield* Effect.logInfo(AnsiDoc.hsep([
+      AnsiDoc.text("Running post-create script"),
+      AnsiDoc.text("did-create-effect-app").pipe(AnsiDoc.annotate(Ansi.cyan)),
+      AnsiDoc.text("via"),
+      AnsiDoc.text(manager).pipe(AnsiDoc.annotate(Ansi.magenta))
+    ]))
+
+    // Try preferred manager; on ENOENT fall back to npm
+    let result = runWithManager(manager, projectDir)
+    if ((result.error as any)?.code === "ENOENT" && manager !== "npm") {
+      yield* Effect.logInfo(AnsiDoc.hsep([
+        AnsiDoc.text("Package manager not found; falling back to"),
+        AnsiDoc.text("npm").pipe(AnsiDoc.annotate(Ansi.magenta))
+      ]))
+      result = runWithManager("npm", projectDir)
+    }
+
+    if (result.status !== 0) {
+      yield* Effect.logError(AnsiDoc.hsep([
+        AnsiDoc.text("Post-create script"),
+        AnsiDoc.text("did-create-effect-app").pipe(AnsiDoc.annotate(Ansi.cyan)),
+        AnsiDoc.text("exited with status"),
+        AnsiDoc.text(String(result.status)).pipe(AnsiDoc.annotate(Ansi.red))
+      ]))
+    }
+  })
+}
