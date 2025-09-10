@@ -18,6 +18,31 @@ patchedDependencies:
 importers:
 
   .:
+    dependencies:
+      '@effect/cli':
+        specifier: ^0.48.21
+        version: 0.48.21(@effect/platform@0.69.21(effect@3.10.14))(@effect/printer-ansi@0.38.14(@effect/typeclass@0.29.14(effect@3.10.14))(effect@3.10.14))(@effect/printer@0.38.14(@effect/typeclass@0.29.14(effect@3.10.14))(effect@3.10.14))(effect@3.10.14)
+      '@effect/platform':
+        specifier: ^0.69.21
+        version: 0.69.21(effect@3.10.14)
+      '@effect/platform-node':
+        specifier: ^0.64.23
+        version: 0.64.23(@effect/platform@0.69.21(effect@3.10.14))(effect@3.10.14)
+      '@effect/printer-ansi':
+        specifier: ^0.38.14
+        version: 0.38.14(@effect/typeclass@0.29.14(effect@3.10.14))(effect@3.10.14)
+      effect:
+        specifier: ^3.10.14
+        version: 3.10.14
+      tar:
+        specifier: ^7.4.3
+        version: 7.4.3
+      tsx:
+        specifier: ^4.19.2
+        version: 4.19.2
+      yaml:
+        specifier: ^2.6.0
+        version: 2.6.0
     devDependencies:
       '@changesets/changelog-github':
         specifier: ^0.5.0
@@ -33,7 +58,7 @@ importers:
         version: 0.3.2
       '@effect/language-service':
         specifier: latest
-        version: 0.10.2
+        version: 0.39.0
       '@effect/vitest':
         specifier: ^0.13.14
         version: 0.13.14(effect@3.10.14)(vitest@2.1.4(@types/node@22.8.5))
@@ -55,9 +80,6 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^8.12.2
         version: 8.12.2(eslint@9.13.0)(typescript@5.6.3)
-      effect:
-        specifier: ^3.10.14
-        version: 3.10.14
       eslint:
         specifier: ^9.13.0
         version: 9.13.0
@@ -76,9 +98,6 @@ importers:
       eslint-plugin-sort-destructure-keys:
         specifier: ^2.0.0
         version: 2.0.0(eslint@9.13.0)
-      tsx:
-        specifier: ^4.19.2
-        version: 4.19.2
       typescript:
         specifier: ^5.6.3
         version: 5.6.3
@@ -274,8 +293,9 @@ packages:
   '@effect/eslint-plugin@0.3.2':
     resolution: {integrity: sha512-c4Vs9t3r54A4Zpl+wo8+PGzZz3JWYsip41H+UrebRLjQ2Hk/ap63IeCgN/HWcYtxtyhRopjp7gW9nOQ2Snbl+g==}
 
-  '@effect/language-service@0.10.2':
-    resolution: {integrity: sha512-7G0dDnLjUz7hgVTjVNlynkqawkLQf4jPvWWI5ArMtnmC3+nVw5YNdWKlsn9lH03JT9RoczpRKBYMjQ+uQNgTzg==}
+  '@effect/language-service@0.39.0':
+    resolution: {integrity: sha512-mrXfnyHiY6FDNYF+MFkHCW/oBcCubQXG2Ma0B4iH0YMoue+6Cxv+CSiiUql22rLBAhea4re2TlV+9+FBarLSGA==}
+    hasBin: true
 
   '@effect/platform-node-shared@0.19.22':
     resolution: {integrity: sha512-ltneO5yn6DuT9+7R/ADvioqJwxvdOKED8nPajKdzrlj+AOi33QHBJdUWON0Nyh73UvsQaC/775SSgcn6m971Tw==}
@@ -1750,6 +1770,7 @@ packages:
   eslint-plugin-markdown@4.0.1:
     resolution: {integrity: sha512-5/MnGvYU0i8MbHH5cg8S+Vl3DL+bqRNYshk1xUO86DilNBaxtTkhH+5FD0/yO03AmlI6+lfNFdk2yOw72EPzpA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: Please use @eslint/markdown instead
     peerDependencies:
       eslint: '>=8'
 
@@ -2715,6 +2736,7 @@ packages:
   source-map@0.8.0-beta.0:
     resolution: {integrity: sha512-2ymg6oRBpebeZi9UUNsgQ89bhx01TcTkmNTGnNO88imTmbSgy4nfujrgVEFKWpMTEGA11EDkTt7mqObTPdigIA==}
     engines: {node: '>= 8'}
+    deprecated: The work that was done in this beta branch won't be included in future versions
 
   spawndamnit@2.0.0:
     resolution: {integrity: sha512-j4JKEcncSjFlqIwU5L/rp2N5SIPsdxaRsIv678+TZxZ0SRDJTm8JrxJMjE/XuiEZNEir3S8l0Fa3Ke339WI4qA==}
@@ -3406,7 +3428,7 @@ snapshots:
       '@dprint/typescript': 0.91.8
       prettier-linter-helpers: 1.0.0
 
-  '@effect/language-service@0.10.2': {}
+  '@effect/language-service@0.39.0': {}
 
   '@effect/platform-node-shared@0.19.22(@effect/platform@0.69.21(effect@3.10.14))(effect@3.10.14)':
     dependencies:
