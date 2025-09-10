@@ -1,4 +1,5 @@
 {
+  "name": "effect-native-examples",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.14.0",
@@ -12,6 +13,9 @@
     "lint-fix": "pnpm lint --fix",
     "changeset-version": "changeset version && node ./scripts/version.mjs && node ./scripts/examples.mjs && node ./scripts/templates.mjs",
     "changeset-publish": "pnpm build && TEST_DIST= pnpm vitest && changeset publish"
+  },
+  "bin": {
+    "create-effect-app": "tsx packages/create-effect-app/src/bin.ts"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.0",
