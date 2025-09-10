@@ -18,7 +18,14 @@
     "create-effect-app": "bin/create-effect-app.mjs"
   },
   "dependencies": {
-    "tsx": "^4.19.2"
+    "@effect/cli": "^0.48.21",
+    "@effect/platform": "^0.69.21",
+    "@effect/platform-node": "^0.64.23",
+    "@effect/printer-ansi": "^0.38.14",
+    "effect": "^3.10.14",
+    "tar": "^7.4.3",
+    "tsx": "^4.19.2",
+    "yaml": "^2.6.0"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.0",
