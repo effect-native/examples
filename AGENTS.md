@@ -7,12 +7,13 @@
 - Templates & Scripts: `templates/*`, `scripts/*`; CLI shim in `bin/`.
 
 ## Build, Test, and Development Commands
+- Env: Node >=18 (CI uses 24.5.0), PNPM 10.x. Optional: `nix develop` for a reproducible shell.
 - Install: `pnpm install` (root workspace only).
 - Type check: `pnpm check` (runs TS project references across packages).
 - Lint: `pnpm lint` (ESLint + dprint rules). Fix: `pnpm lint-fix`.
 - Build: `pnpm build` (builds all workspace packages in parallel).
 - Test (workspace): `pnpm vitest`.
-- Test one package: `pnpm vitest --root packages/create-effect-app`.
+- Test one package: `pnpm vitest packages/create-effect-app` (workspace filter by path).
 - Run an example: `cd examples/http-server && pnpm install && pnpm dev` (or `pnpm test`).
 
 ## Coding Style & Naming Conventions
@@ -32,7 +33,6 @@
 - For package changes, add a changeset: `pnpm changeset` (CI handles versioning/publish).
 - Pre-push: `pnpm lint && pnpm check && pnpm vitest`.
 
-## Agent Workflow (uXP)
+## Agent Workflow (XP)
 - Work in thin slices: pair → TDD (red→green→refactor) → integrate.
-- Guardrails: 5‑minute build, sustainable pace, collective ownership.
 - After each change: ensure tests pass, clarify code, remove duplication, and simplify.
