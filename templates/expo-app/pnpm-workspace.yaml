@@ -1,0 +1,10 @@
+nodeLinker: hoisted
+
+onlyBuiltDependencies:
+  - esbuild
+  - unrs-resolver
+
+patchedDependencies:
+  metro: patches/metro.patch
+
+ignorePatchFailures: true
