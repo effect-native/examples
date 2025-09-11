@@ -180,6 +180,17 @@ function createExample(config: ExampleConfig) {
     // Download the example project from GitHub
     yield* GitHub.downloadExample(config)
 
+    // Normalize potential non-dotted gitignore shipped via some channels
+    const path = yield* Path.Path
+    const fs2 = fs
+    const egGitignore = path.join(config.projectName, "gitignore")
+    const egDotGitignore = path.join(config.projectName, ".gitignore")
+    const egHasDot = yield* fs2.exists(egDotGitignore)
+    const egHas = yield* fs2.exists(egGitignore)
+    if (!egHasDot && egHas) {
+      yield* fs2.rename(egGitignore, egDotGitignore)
+    }
+
     yield* Effect.logInfo(
       AnsiDoc.hsep([
         AnsiDoc.text("Success!").pipe(AnsiDoc.annotate(Ansi.green)),
@@ -222,6 +233,17 @@ function createTemplate(config: TemplateConfig) {
 
     // Download the template project from GitHub
     yield* GitHub.downloadTemplate(config)
+
+    // Some distribution channels (e.g. npm/npx with GitHub sources) may ship
+    // template dotfiles as plain names (e.g. "gitignore") so they don't get
+    // stripped. Normalize these back to their dotfile names when missing.
+    const gitignorePath = path.join(config.projectName, "gitignore")
+    const dotGitignorePath = path.join(config.projectName, ".gitignore")
+    const hasDotGitignore = yield* fs.exists(dotGitignorePath)
+    const hasGitignore = yield* fs.exists(gitignorePath)
+    if (!hasDotGitignore && hasGitignore) {
+      yield* fs.rename(gitignorePath, dotGitignorePath)
+    }
 
     const packageJson = yield* fs
       .readFileString(path.join(config.projectName, "package.json"))
