@@ -19,7 +19,6 @@
     "packages/create-effect-app/src/",
     "examples/",
     "templates/",
-    "templates/*/.gitignore",
     "README.md",
     ".gitignore"
   ],
