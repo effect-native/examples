@@ -151,6 +151,46 @@ function resolveProjectType(config: RawConfig) {
   })
 }
 
+// After files are copied into the project directory, rename any
+// top-level or nested `gitignore` files to `.gitignore` so that
+// ignore rules are effective in the initialized repository, even
+// when dotfiles were stripped in packaging.
+function finalizeGitignoreFiles(projectDir: string) {
+  return Effect.gen(function*() {
+    const fs = yield* FileSystem.FileSystem
+    const path = yield* Path.Path
+
+    const tryRename = (from: string, to: string) =>
+      Effect.catchAllCause(fs.rename(from, to), () => Effect.unit)
+
+    const walk = function*(dir: string): Generator<Effect.Effect<never, never, void>, void, any> {
+      // Rename at this level if present
+      const gi = path.join(dir, "gitignore")
+      const dot = path.join(dir, ".gitignore")
+      const hasGi = yield* fs.exists(gi)
+      if (hasGi) {
+        // If a .gitignore already exists, prefer the dotfile and remove duplicate
+        const hasDot = yield* fs.exists(dot)
+        if (!hasDot) {
+          yield* tryRename(gi, dot)
+        }
+      }
+
+      // Recurse into subdirectories
+      const entries = yield* fs.readDirectory(dir)
+      for (const name of entries) {
+        const full = path.join(dir, name)
+        const stat = yield* fs.stat(full)
+        if (stat.type === "Directory") {
+          yield* Effect.flatten(Effect.sync(() => walk(full).next().value ?? Effect.unit))
+        }
+      }
+    }
+
+    yield* Effect.flatten(Effect.sync(() => walk(projectDir).next().value ?? Effect.unit))
+  })
+}
+
 /**
  * Examples are simply cloned as is from GitHub
  */
@@ -427,6 +467,9 @@ function createTemplate(config: TemplateConfig) {
     if (config.projectType.template === "expo-app") {
       yield* configureExpoApp(config.projectName)
     }
+
+    // Ensure any packaged `gitignore` files become `.gitignore` so Git recognizes them
+    yield* finalizeGitignoreFiles(config.projectName)
   })
 }
 
