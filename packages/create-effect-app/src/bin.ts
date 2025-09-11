@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import * as CliConfig from "@effect/cli/CliConfig"
+import * as NodeTerminal from "@effect/platform-node-shared/NodeTerminal"
 import * as NodeContext from "@effect/platform-node/NodeContext"
 import * as NodeHttpClient from "@effect/platform-node/NodeHttpClient"
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime"
-import * as NodeTerminal from "@effect/platform-node-shared/NodeTerminal"
 import * as Ansi from "@effect/printer-ansi/Ansi"
 import * as AnsiDoc from "@effect/printer-ansi/AnsiDoc"
 import * as Effect from "effect/Effect"
@@ -36,7 +36,9 @@ NodeRuntime.runMain(
         ))
     }),
     Effect.orDie,
-    Effect.provide(MainLive)
+    Effect.provide(MainLive),
+    Effect.ensureRequirementsType<never>(),
+    Effect.andThen(Effect.never)
   ),
   {
     disablePrettyLogger: true,

@@ -160,11 +160,10 @@ function finalizeGitignoreFiles(projectDir: string) {
     const fs = yield* FileSystem.FileSystem
     const path = yield* Path.Path
 
-    const tryRename = (from: string, to: string) =>
-      Effect.catchAllCause(fs.rename(from, to), () => Effect.unit)
+    const tryRename = (from: string, to: string) => fs.rename(from, to).pipe(Effect.ignore)
 
-    const visit = (dir: string): Effect.Effect<never, never, void> =>
-      Effect.gen(function*() {
+    const visit: (dir: string) => Effect.Effect<void, never> = Effect.fn(
+      function*(dir: string) {
         // Rename at this level if present
         const gi = path.join(dir, "gitignore")
         const dot = path.join(dir, ".gitignore")
@@ -186,10 +185,12 @@ function finalizeGitignoreFiles(projectDir: string) {
             yield* visit(full)
           }
         }
-      })
+      },
+      (effect) => effect.pipe(Effect.ignore)
+    ) as (dir: string) => Effect.Effect<void, never>
 
     yield* visit(projectDir)
-  })
+  }).pipe(Effect.ignore)
 }
 
 /**
@@ -265,9 +266,6 @@ function createTemplate(config: TemplateConfig) {
 
     // Download the template project from GitHub
     yield* GitHub.downloadTemplate(config)
-
-    // Ensure any packaged `gitignore` files become `.gitignore`
-    yield* finalizeGitignoreFiles(config.projectName)
 
     const packageJson = yield* fs
       .readFileString(path.join(config.projectName, "package.json"))
