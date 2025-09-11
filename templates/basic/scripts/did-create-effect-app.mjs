@@ -47,4 +47,3 @@ main().catch((err) => {
   console.error("[create-effect-app] did-create-effect-app script failed:", err)
   process.exitCode = 1
 })
-
