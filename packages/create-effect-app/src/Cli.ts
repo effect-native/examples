@@ -17,7 +17,7 @@ import { ProjectType } from "./Domain.js"
 import { GitHub } from "./GitHub.js"
 import type { Example } from "./internal/examples.js"
 import { examples } from "./internal/examples.js"
-import { type Template, templates } from "./internal/templates.js"
+import { type Template, templates, templateChoices } from "./internal/templates.js"
 import * as InternalVersion from "./internal/version.js"
 import { validateProjectName } from "./Utils.js"
 
@@ -391,23 +391,7 @@ const getUserInput = Prompt.select<"example" | "template">({
       return Prompt.all({
         template: Prompt.select<Template>({
           message: "What project template should be used?",
-          choices: [
-            {
-              title: "Basic",
-              value: "basic",
-              description: "A project containing a single package"
-            },
-            {
-              title: "Monorepo",
-              value: "monorepo",
-              description: "A project containing multiple packages"
-            },
-            {
-              title: "CLI Application",
-              value: "cli",
-              description: "A project containing a CLI application"
-            }
-          ]
+          choices: templateChoices as any
         }),
         withChangesets: Prompt.toggle({
           message: "Initialize project with Changesets?",
