@@ -14,6 +14,14 @@
     "changeset-version": "changeset version && node ./scripts/version.mjs && node ./scripts/examples.mjs && node ./scripts/templates.mjs",
     "changeset-publish": "pnpm build && TEST_DIST= pnpm vitest && changeset publish"
   },
+  "files": [
+    "bin/",
+    "packages/create-effect-app/src/",
+    "examples/",
+    "templates/",
+    "README.md",
+    ".gitignore"
+  ],
   "bin": {
     "create-effect-app": "bin/create-effect-app.mjs"
   },
