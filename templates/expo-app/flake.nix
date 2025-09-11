@@ -25,8 +25,8 @@
           ];
 
           shellHook = ''
-            # Ensure Java 17 for Android/Gradle
-            export JAVA_HOME=${pkgs.jdk17}/lib/openjdk
+            # Ensure Java 17 for Android/Gradle (use Nix JDK root)
+            export JAVA_HOME=${pkgs.jdk17}
             export PATH="$JAVA_HOME/bin:$PATH"
             echo "Node: $(node -v 2>/dev/null || echo n/a)  pnpm: $(pnpm -v 2>/dev/null || echo n/a)"
             if [ ! -d node_modules ] || [ ! -d translations ]; then
