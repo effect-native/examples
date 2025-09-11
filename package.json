@@ -14,15 +14,23 @@
     "changeset-version": "changeset version && node ./scripts/version.mjs && node ./scripts/examples.mjs && node ./scripts/templates.mjs",
     "changeset-publish": "pnpm build && TEST_DIST= pnpm vitest && changeset publish"
   },
+  "files": [
+    "bin/",
+    "packages/create-effect-app/src/",
+    "examples/",
+    "templates/",
+    "README.md",
+    ".gitignore"
+  ],
   "bin": {
     "create-effect-app": "bin/create-effect-app.mjs"
   },
   "dependencies": {
-    "@effect/cli": "^0.48.21",
-    "@effect/platform": "^0.69.21",
-    "@effect/platform-node": "^0.64.23",
-    "@effect/printer-ansi": "^0.38.14",
-    "effect": "^3.10.14",
+    "@effect/cli": "^0.48.31",
+    "@effect/platform": "^0.69.31",
+    "@effect/platform-node": "^0.64.33",
+    "@effect/printer-ansi": "^0.38.19",
+    "effect": "^3.17.13",
     "tar": "^7.4.3",
     "tsx": "^4.19.2",
     "yaml": "^2.6.0"
@@ -33,7 +41,8 @@
     "@dprint/formatter": "^0.4.1",
     "@effect/eslint-plugin": "^0.3.2",
     "@effect/language-service": "latest",
-    "@effect/vitest": "^0.13.14",
+    "@effect/typeclass": "^0.29.19",
+    "@effect/vitest": "^0.13.19",
     "@eslint/compat": "^1.2.2",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.13.0",

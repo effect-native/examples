@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import * as CliConfig from "@effect/cli/CliConfig"
+import * as NodeTerminal from "@effect/platform-node-shared/NodeTerminal"
 import * as NodeContext from "@effect/platform-node/NodeContext"
 import * as NodeHttpClient from "@effect/platform-node/NodeHttpClient"
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime"
@@ -19,23 +20,28 @@ const MainLive = GitHub.Default.pipe(
     Logger.replace(Logger.defaultLogger, AnsiDocLogger),
     Logger.minimumLogLevel(LogLevel.Info),
     CliConfig.layer({ showBuiltIns: false }),
+    NodeTerminal.layer,
     NodeContext.layer,
     NodeHttpClient.layerUndici
   ))
 )
 
-cli(process.argv).pipe(
-  Effect.catchTags({
-    QuitException: () =>
-      Effect.logError(AnsiDoc.cat(
-        AnsiDoc.hardLine,
-        AnsiDoc.text("Exiting...").pipe(AnsiDoc.annotate(Ansi.red))
-      ))
-  }),
-  Effect.orDie,
-  Effect.provide(MainLive),
-  NodeRuntime.runMain({
+NodeRuntime.runMain(
+  cli(process.argv).pipe(
+    Effect.catchTags({
+      QuitException: () =>
+        Effect.logError(AnsiDoc.cat(
+          AnsiDoc.hardLine,
+          AnsiDoc.text("Exiting...").pipe(AnsiDoc.annotate(Ansi.red))
+        ))
+    }),
+    Effect.orDie,
+    Effect.provide(MainLive),
+    Effect.ensureRequirementsType<never>(),
+    Effect.andThen(Effect.never)
+  ),
+  {
     disablePrettyLogger: true,
     disableErrorReporting: true
-  })
+  }
 )

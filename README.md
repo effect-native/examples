@@ -1,4 +1,12 @@
-[![Nightly Build](https://github.com/Effect-TS/examples/workflows/Nightly%20Checks/badge.svg)](https://github.com/Effect-TS/examples/actions)
+## Quick Start
+
+```sh
+pnpm dlx create-effect-app@github:effect-native/examples
+```
+
+This is a fork of the https://github.com/Effect-TS/examples repo with extra examples for Effect Native.
+
+---
 
 # Effect Examples
 
