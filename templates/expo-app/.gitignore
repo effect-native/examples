@@ -19,6 +19,7 @@ node_modules/
 npm-debug.*
 tsconfig.tsbuildinfo
 web-build/
+.direnv
 
 # fbtee
 .enum_manifest.json
