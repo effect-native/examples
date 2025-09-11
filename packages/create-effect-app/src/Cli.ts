@@ -163,31 +163,32 @@ function finalizeGitignoreFiles(projectDir: string) {
     const tryRename = (from: string, to: string) =>
       Effect.catchAllCause(fs.rename(from, to), () => Effect.unit)
 
-    const walk = function*(dir: string): Generator<Effect.Effect<never, never, void>, void, any> {
-      // Rename at this level if present
-      const gi = path.join(dir, "gitignore")
-      const dot = path.join(dir, ".gitignore")
-      const hasGi = yield* fs.exists(gi)
-      if (hasGi) {
-        // If a .gitignore already exists, prefer the dotfile and remove duplicate
-        const hasDot = yield* fs.exists(dot)
-        if (!hasDot) {
-          yield* tryRename(gi, dot)
+    const visit = (dir: string): Effect.Effect<never, never, void> =>
+      Effect.gen(function*() {
+        // Rename at this level if present
+        const gi = path.join(dir, "gitignore")
+        const dot = path.join(dir, ".gitignore")
+        const hasGi = yield* fs.exists(gi)
+        if (hasGi) {
+          // If a .gitignore already exists, prefer the dotfile and remove duplicate
+          const hasDot = yield* fs.exists(dot)
+          if (!hasDot) {
+            yield* tryRename(gi, dot)
+          }
         }
-      }
 
-      // Recurse into subdirectories
-      const entries = yield* fs.readDirectory(dir)
-      for (const name of entries) {
-        const full = path.join(dir, name)
-        const stat = yield* fs.stat(full)
-        if (stat.type === "Directory") {
-          yield* Effect.flatten(Effect.sync(() => walk(full).next().value ?? Effect.unit))
+        // Recurse into subdirectories
+        const entries = yield* fs.readDirectory(dir)
+        for (const name of entries) {
+          const full = path.join(dir, name)
+          const stat = yield* fs.stat(full)
+          if (stat.type === "Directory") {
+            yield* visit(full)
+          }
         }
-      }
-    }
+      })
 
-    yield* Effect.flatten(Effect.sync(() => walk(projectDir).next().value ?? Effect.unit))
+    yield* visit(projectDir)
   })
 }
 
@@ -220,16 +221,7 @@ function createExample(config: ExampleConfig) {
     // Download the example project from GitHub
     yield* GitHub.downloadExample(config)
 
-    // Normalize potential non-dotted gitignore shipped via some channels
-    const path = yield* Path.Path
-    const fs2 = fs
-    const egGitignore = path.join(config.projectName, "gitignore")
-    const egDotGitignore = path.join(config.projectName, ".gitignore")
-    const egHasDot = yield* fs2.exists(egDotGitignore)
-    const egHas = yield* fs2.exists(egGitignore)
-    if (!egHasDot && egHas) {
-      yield* fs2.rename(egGitignore, egDotGitignore)
-    }
+    // (gitignore normalization happens at the end of all mutations)
 
     yield* Effect.logInfo(
       AnsiDoc.hsep([
@@ -274,16 +266,8 @@ function createTemplate(config: TemplateConfig) {
     // Download the template project from GitHub
     yield* GitHub.downloadTemplate(config)
 
-    // Some distribution channels (e.g. npm/npx with GitHub sources) may ship
-    // template dotfiles as plain names (e.g. "gitignore") so they don't get
-    // stripped. Normalize these back to their dotfile names when missing.
-    const gitignorePath = path.join(config.projectName, "gitignore")
-    const dotGitignorePath = path.join(config.projectName, ".gitignore")
-    const hasDotGitignore = yield* fs.exists(dotGitignorePath)
-    const hasGitignore = yield* fs.exists(gitignorePath)
-    if (!hasDotGitignore && hasGitignore) {
-      yield* fs.rename(gitignorePath, dotGitignorePath)
-    }
+    // Ensure any packaged `gitignore` files become `.gitignore`
+    yield* finalizeGitignoreFiles(config.projectName)
 
     const packageJson = yield* fs
       .readFileString(path.join(config.projectName, "package.json"))
