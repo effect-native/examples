@@ -1,6 +1,7 @@
-import { fileURLToPath } from "node:url"
-import * as Path from "node:path"
+import type * as Prompt from "@effect/cli/Prompt"
 import * as Fs from "node:fs"
+import * as Path from "node:path"
+import { fileURLToPath } from "node:url"
 
 /** @internal */
 export type Template = string
@@ -12,7 +13,7 @@ export type Template = string
  * package that doesn't include the repository root).
  * @internal
  */
-function discoverTemplates(): readonly Template[] {
+function discoverTemplates(): ReadonlyArray<Template> {
   try {
     const __filename = fileURLToPath(import.meta.url)
     const __dirname = Path.dirname(__filename)
@@ -36,15 +37,9 @@ function discoverTemplates(): readonly Template[] {
 }
 
 /** @internal */
-export const templates: readonly Template[] = discoverTemplates()
+export const templates: ReadonlyArray<Template> = discoverTemplates()
 
 /** @internal */
-export interface TemplateChoice {
-  readonly title: string
-  readonly value: Template
-  readonly description?: string
-}
-
 function toTitle(slug: string): string {
   return slug
     .split(/[-_]+/)
@@ -58,9 +53,9 @@ function toTitle(slug: string): string {
  * a description read from each template's package.json.
  * @internal
  */
-function buildTemplateChoices(): readonly TemplateChoice[] {
+function buildTemplateChoices(): ReadonlyArray<Prompt.Prompt.SelectChoice<Template>> {
   const list = templates
-  const choices: TemplateChoice[] = []
+  const choices: Array<Prompt.Prompt.SelectChoice<Template>> = []
 
   try {
     const __filename = fileURLToPath(import.meta.url)
@@ -81,8 +76,8 @@ function buildTemplateChoices(): readonly TemplateChoice[] {
         // ignore per-template failures; just omit description
       }
 
-      const base = { title: toTitle(name), value: name }
-      choices.push((description !== undefined ? { ...base, description } : base) as TemplateChoice)
+      const base: Prompt.Prompt.SelectChoice<Template> = { title: toTitle(name), value: name }
+      choices.push(description !== undefined ? { ...base, description } : base)
     }
   } catch {
     // If anything goes wrong, fall back to titles derived from slugs
@@ -95,4 +90,4 @@ function buildTemplateChoices(): readonly TemplateChoice[] {
 }
 
 /** @internal */
-export const templateChoices: readonly TemplateChoice[] = buildTemplateChoices()
+export const templateChoices = buildTemplateChoices()
