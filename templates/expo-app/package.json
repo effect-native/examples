@@ -6,6 +6,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "android": "expo run:android",
+    "android:doctor": "node ./scripts/android-doctor.mjs",
     "dev": "expo start",
     "dev:setup": "pnpm fbtee:all",
     "did-create-effect-app": "node ./scripts/did-create-effect-app.mjs",
