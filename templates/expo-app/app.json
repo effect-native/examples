@@ -19,7 +19,16 @@
       ],
       "expo-localization",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "buildReactNativeFromSource": true,
+            "ccacheEnabled": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "reactCanary": true,
