@@ -102,9 +102,96 @@ export class GitHub extends Effect.Service<GitHub>()("app/GitHub", {
         )
       })
 
+    /** Parse a GitHub repo specification into owner/repo/ref/subdir */
+    const parseGitHubSpec = (spec: string) => {
+      let s = spec.trim()
+      // Allow prefixes
+      if (s.startsWith("gh:")) s = s.slice(3)
+      if (s.startsWith("github:")) s = s.slice(7)
+
+      // URL form
+      if (s.startsWith("http://") || s.startsWith("https://")) {
+        try {
+          const url = new URL(s)
+          if (!/github\.com$/i.test(url.hostname)) {
+            return undefined
+          }
+          const parts = url.pathname.split("/").filter(Boolean)
+          if (parts.length < 2) return undefined
+          const owner = parts[0]!
+          const repo = parts[1]!
+          let ref: string | undefined
+          let subdir: string | undefined
+          if (parts[2] === "tree" && parts.length >= 4) {
+            ref = parts[3]!
+            subdir = parts.slice(4).join("/") || undefined
+          } else {
+            subdir = parts.slice(2).join("/") || undefined
+          }
+          return { owner, repo, ref, subdir }
+        } catch {
+          return undefined
+        }
+      }
+
+      // owner/repo[/subdir][@ref] (ref suffix)
+      let ref: string | undefined
+      const at = s.lastIndexOf("@")
+      if (at > 0) {
+        ref = s.slice(at + 1)
+        s = s.slice(0, at)
+      }
+      const segs = s.split("/").filter(Boolean)
+      if (segs.length < 2) return undefined
+      const owner = segs[0]!
+      const repo = segs[1]!
+      const subdir = segs.slice(2).join("/") || undefined
+      return { owner, repo, ref, subdir }
+    }
+
+    const downloadFromRepo = (spec: string, destDir: string) =>
+      Effect.gen(function*() {
+        const parsed = parseGitHubSpec(spec)
+        if (!parsed) {
+          return yield* Effect.fail(
+            ValidationError.invalidValue(
+              HelpDoc.p(`Invalid GitHub repo spec: ${spec}`)
+            )
+          )
+        }
+        const { owner, ref, repo, subdir } = parsed
+        const commitish = ref ?? "main"
+        yield* codeloadClient.get(`/${owner}/${repo}/tar.gz/${commitish}`).pipe(
+          HttpClientResponse.stream,
+          Stream.run(
+            NodeSink.fromWritable(
+              () =>
+                Tar.extract({
+                  cwd: destDir,
+                  strip: 1 + (subdir ? subdir.split("/").filter(Boolean).length : 0),
+                  filter: (p) => {
+                    // Remove top-level folder name before matching
+                    const parts = p.split("/")
+                    const inner = parts.slice(1).join("/")
+                    if (!subdir) return true
+                    return inner === subdir || inner.startsWith(subdir + "/")
+                  }
+                }),
+              () =>
+                ValidationError.invalidValue(
+                  HelpDoc.p(
+                    `Failed to download template from ${owner}/${repo}@${commitish}${subdir ? "/" + subdir : ""}`
+                  )
+                )
+            )
+          )
+        )
+      })
+
     return {
       downloadExample,
-      downloadTemplate
+      downloadTemplate,
+      downloadFromRepo
     } as const
   })
 }) {}

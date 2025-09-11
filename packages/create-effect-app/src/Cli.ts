@@ -45,6 +45,19 @@ const templateType = Options.choice("template", templates).pipe(
   )
 )
 
+// Optional alternative sources to built-in templates
+const templateFolder = Options.text("template-folder").pipe(
+  Options.withDescription(
+    "Path to a local template folder (overrides --template if provided)"
+  )
+)
+
+const templateRepo = Options.text("template-repo").pipe(
+  Options.withDescription(
+    "GitHub repo to use as template (e.g. owner/repo, gh:owner/repo, or https://github.com/owner/repo). Optional path via /sub/dir and ref via @ref"
+  )
+)
+
 const withChangesets = Options.boolean("changesets").pipe(
   Options.withDescription("Initialize project with Changesets")
 )
@@ -63,10 +76,55 @@ const withWorkflows = Options.boolean("workflows").pipe(
   )
 )
 
+// We support multiple ways to specify a template:
+// - built-in catalog via --template
+// - local folder via --template-folder
+// - GitHub repo via --template-repo
 const projectType: Options.Options<Option.Option<ProjectType>> = Options.all({
   example: exampleType
 }).pipe(
   Options.map(ProjectType.Example),
+  Options.orElse(
+    Options.all({
+      templateFolder,
+      withChangesets,
+      withNixFlake,
+      withESLint,
+      withWorkflows
+    }).pipe(
+      Options.map((o) =>
+        ProjectType.Template({
+          // Use the folder basename as a friendly template label when possible
+          template: o.templateFolder ? o.templateFolder.split(/[\\/]/).slice(-1)[0]! : "folder",
+          templateFolder: o.templateFolder,
+          withChangesets: o.withChangesets,
+          withNixFlake: o.withNixFlake,
+          withESLint: o.withESLint,
+          withWorkflows: o.withWorkflows
+        })
+      )
+    )
+  ),
+  Options.orElse(
+    Options.all({
+      templateRepo,
+      withChangesets,
+      withNixFlake,
+      withESLint,
+      withWorkflows
+    }).pipe(
+      Options.map((o) =>
+        ProjectType.Template({
+          template: o.templateRepo,
+          templateRepo: o.templateRepo,
+          withChangesets: o.withChangesets,
+          withNixFlake: o.withNixFlake,
+          withESLint: o.withESLint,
+          withWorkflows: o.withWorkflows
+        })
+      )
+    )
+  ),
   Options.orElse(
     Options.all({
       template: templateType,
@@ -255,17 +313,37 @@ function createTemplate(config: TemplateConfig) {
     // Create the project directory
     yield* fs.makeDirectory(config.projectName, { recursive: true })
 
+    const templateLabel = config.projectType.templateRepo
+      ?? config.projectType.templateFolder
+      ?? config.projectType.template
+
     yield* Effect.logInfo(
       AnsiDoc.hsep([
         AnsiDoc.text("Initializing project with template:"),
-        AnsiDoc.text(config.projectType.template).pipe(
-          AnsiDoc.annotate(Ansi.magenta)
-        )
+        AnsiDoc.text(String(templateLabel)).pipe(AnsiDoc.annotate(Ansi.magenta))
       ])
     )
 
-    // Download the template project from GitHub
-    yield* GitHub.downloadTemplate(config)
+    // Materialize the template into the project directory
+    if (config.projectType.templateRepo) {
+      // Download from an arbitrary GitHub repo spec
+      yield* GitHub.downloadFromRepo(
+        config.projectType.templateRepo,
+        config.projectName
+      )
+    } else if (config.projectType.templateFolder) {
+      // Copy from a local folder (copy contents, not the folder itself)
+      const entries = yield* fs.readDirectory(config.projectType.templateFolder)
+      yield* fs.makeDirectory(config.projectName, { recursive: true })
+      for (const name of entries) {
+        const from = path.join(config.projectType.templateFolder, name)
+        const to = path.join(config.projectName, name)
+        yield* fs.copy(from, to)
+      }
+    } else {
+      // Built-in catalog template from this repo or remote fall-back
+      yield* GitHub.downloadTemplate(config)
+    }
 
     const packageJson = yield* fs
       .readFileString(path.join(config.projectName, "package.json"))
@@ -405,7 +483,9 @@ function createTemplate(config: TemplateConfig) {
         path.join(config.projectName, ".changeset", "config.json")
       )
     }
-    if (config.projectType.template === "monorepo") {
+    // Heuristic: treat as monorepo when a top-level "packages" directory exists
+    const isMonorepo = yield* fs.exists(path.join(config.projectName, "packages"))
+    if (isMonorepo) {
       filesToCheck.push(
         path.join(config.projectName, "packages", "cli", "package.json")
       )
@@ -446,9 +526,9 @@ function createTemplate(config: TemplateConfig) {
     )
 
     // Inline, template-specific post processing (no external scripts)
-    if (config.projectType.template === "expo-app") {
-      yield* configureExpoApp(config.projectName)
-    }
+    // Run Expo configuration if an Expo app is detected (by presence of app.json)
+    const hasAppJson = yield* fs.exists(path.join(config.projectName, "app.json"))
+    if (hasAppJson) yield* configureExpoApp(config.projectName)
 
     // Ensure any packaged `gitignore` files become `.gitignore` so Git recognizes them
     yield* finalizeGitignoreFiles(config.projectName)
@@ -487,28 +567,109 @@ const getUserInput = Prompt.select<"example" | "template">({
         }).pipe(Prompt.map(ProjectType.Example))
       }
       case "template": {
-        return Prompt.all({
-          template: Prompt.select<Template>({
-            message: "What project template should be used?",
-            choices: templateChoices
-          }),
-          withChangesets: Prompt.toggle({
-            message: "Initialize project with Changesets?",
-            initial: true
-          }),
-          withNixFlake: Prompt.toggle({
-            message: "Initialize project with a Nix flake?",
-            initial: true
-          }),
-          withESLint: Prompt.toggle({
-            message: "Initialize project with ESLint?",
-            initial: true
-          }),
-          withWorkflows: Prompt.toggle({
-            message: "Initialize project with Effect's recommended GitHub actions?",
-            initial: true
-          })
-        }).pipe(Prompt.map(ProjectType.Template))
+        // Ask for template source first
+        const sourcePrompt = Prompt.select<"built-in" | "folder" | "repo">({
+          message: "Where should the template come from?",
+          choices: [
+            { title: "Built-in (catalog)", value: "built-in" },
+            { title: "Local folder", value: "folder" },
+            { title: "GitHub repo", value: "repo" }
+          ]
+        })
+
+        return Prompt.flatMap(sourcePrompt, (source) => {
+          switch (source) {
+            case "built-in":
+              return Prompt.all({
+                template: Prompt.select<Template>({
+                  message: "What project template should be used?",
+                  choices: templateChoices
+                }),
+                withChangesets: Prompt.toggle({
+                  message: "Initialize project with Changesets?",
+                  initial: true
+                }),
+                withNixFlake: Prompt.toggle({
+                  message: "Initialize project with a Nix flake?",
+                  initial: true
+                }),
+                withESLint: Prompt.toggle({
+                  message: "Initialize project with ESLint?",
+                  initial: true
+                }),
+                withWorkflows: Prompt.toggle({
+                  message: "Initialize project with Effect's recommended GitHub actions?",
+                  initial: true
+                })
+              }).pipe(Prompt.map(ProjectType.Template))
+            case "folder":
+              return Prompt.all({
+                templateFolder: Prompt.text({
+                  message: "Path to local template folder"
+                }),
+                withChangesets: Prompt.toggle({
+                  message: "Initialize project with Changesets?",
+                  initial: true
+                }),
+                withNixFlake: Prompt.toggle({
+                  message: "Initialize project with a Nix flake?",
+                  initial: true
+                }),
+                withESLint: Prompt.toggle({
+                  message: "Initialize project with ESLint?",
+                  initial: true
+                }),
+                withWorkflows: Prompt.toggle({
+                  message: "Initialize project with Effect's recommended GitHub actions?",
+                  initial: true
+                })
+              }).pipe(
+                Prompt.map((o) =>
+                  ProjectType.Template({
+                    template: o.templateFolder.split(/[\\/]/).slice(-1)[0]!,
+                    templateFolder: o.templateFolder,
+                    withChangesets: o.withChangesets,
+                    withNixFlake: o.withNixFlake,
+                    withESLint: o.withESLint,
+                    withWorkflows: o.withWorkflows
+                  })
+                )
+              )
+            case "repo":
+              return Prompt.all({
+                templateRepo: Prompt.text({
+                  message: "GitHub repo (owner/repo[/path][@ref] or URL)"
+                }),
+                withChangesets: Prompt.toggle({
+                  message: "Initialize project with Changesets?",
+                  initial: true
+                }),
+                withNixFlake: Prompt.toggle({
+                  message: "Initialize project with a Nix flake?",
+                  initial: true
+                }),
+                withESLint: Prompt.toggle({
+                  message: "Initialize project with ESLint?",
+                  initial: true
+                }),
+                withWorkflows: Prompt.toggle({
+                  message: "Initialize project with Effect's recommended GitHub actions?",
+                  initial: true
+                })
+              }).pipe(
+                Prompt.map((o) =>
+                  ProjectType.Template({
+                    template: o.templateRepo,
+                    templateRepo: o.templateRepo,
+                    withChangesets: o.withChangesets,
+                    withNixFlake: o.withNixFlake,
+                    withESLint: o.withESLint,
+                    withWorkflows: o.withWorkflows
+                  })
+                )
+              )
+          }
+        })
       }
     }
   })
