@@ -91,6 +91,9 @@ importers:
       react-native:
         specifier: ~0.81.4
         version: 0.81.4(@babel/core@7.28.4)(@types/react@19.1.12)(react@19.1.1)
+      react-native-css-interop:
+        specifier: 0.1.22
+        version: 0.1.22(react-native-reanimated@4.1.0(patch_hash=f8d3886b1812261ee6440f92ebe2787927c9456d7f9327c80f29901eda434640)(@babel/core@7.28.4)(react-native-worklets@0.5.1(@babel/core@7.28.4)(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.12)(react@19.1.1))(react@19.1.1))(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.12)(react@19.1.1))(react@19.1.1))(react-native-safe-area-context@5.6.1(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.12)(react@19.1.1))(react@19.1.1))(react-native-svg@15.13.0(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.12)(react@19.1.1))(react@19.1.1))(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.12)(react@19.1.1))(react@19.1.1)(tailwindcss@3.4.17)
       react-native-gesture-handler:
         specifier: ^2.28.0
         version: 2.28.0(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.12)(react@19.1.1))(react@19.1.1)
