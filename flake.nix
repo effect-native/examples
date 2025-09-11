@@ -14,12 +14,12 @@
     {
       formatter = forAllSystems (pkgs: pkgs.alejandra);
       devShells = forAllSystems (pkgs: {
-        default = pkgs.mkShell {
+        default = pkgs.mkShellNoCC {
           packages = with pkgs; [
-            corepack
             findutils
             jq
             nodejs
+            pnpm
           ];
         };
       });
