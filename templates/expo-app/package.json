@@ -5,7 +5,7 @@
   "type": "module",
   "main": "expo-router/entry",
   "scripts": {
-    "android": "expo run:android",
+    "android": "PREFAB_NO_ARGFILE=1 expo run:android",
     "android:doctor": "node ./scripts/android-doctor.mjs",
     "dev": "expo start",
     "dev:setup": "pnpm fbtee:all",
