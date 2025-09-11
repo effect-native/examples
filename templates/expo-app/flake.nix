@@ -17,6 +17,7 @@
         default = pkgs.mkShellNoCC {
           packages = with pkgs; [
             nodejs_22
+            jdk17
             pnpm
             watchman
           ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
@@ -24,6 +25,9 @@
           ];
 
           shellHook = ''
+            # Ensure Java 17 for Android/Gradle
+            export JAVA_HOME=${pkgs.jdk17}/lib/openjdk
+            export PATH="$JAVA_HOME/bin:$PATH"
             echo "Node: $(node -v 2>/dev/null || echo n/a)  pnpm: $(pnpm -v 2>/dev/null || echo n/a)"
             if [ ! -d node_modules ] || [ ! -d translations ]; then
               echo "Bootstrapping: running 'pnpm install && pnpm dev:setup'..."
