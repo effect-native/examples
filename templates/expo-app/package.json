@@ -8,6 +8,7 @@
     "android": "expo run:android",
     "dev": "expo start",
     "dev:setup": "pnpm fbtee:all",
+    "did-create-effect-app": "node ./scripts/did-create-effect-app.mjs",
     "fbtee:all": "pnpm fbtee collect && pnpm fbtee translate",
     "format": "prettier --experimental-cli --write .",
     "format-graphql": "./scripts/format-graphql-schema.tsx",
